@@ -59,6 +59,7 @@
         .btn-secondary:hover { background-color: #cdd4ff; }
         .btn-danger { background-color: #ffe6e6; color: #ff4d4d; border: 1px solid #ff4d4d; }
         .btn-danger:hover { background-color: #ffcccc; }
+        .btn-small { padding: 6px 10px; font-size: 12px; }
 
         /* Main Container */
         .container {
@@ -119,7 +120,7 @@
         .set-header {
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 6px;
             flex-wrap: wrap;
         }
 
@@ -195,6 +196,7 @@
             background: var(--card-bg);
             border-radius: 16px;
             box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            overflow-y: auto;
         }
 
         .card-back {
@@ -246,10 +248,8 @@
 
         .icon-btn:hover { background-color: #f0f0f0; }
 
-        /* Completion Mode Buttons */
         .incorrect-btn { border-color: #ff4d4d; color: #ff4d4d; }
         .incorrect-btn:hover { background-color: #ffe6e6; }
-        
         .correct-btn { border-color: #4caf50; color: #4caf50; }
         .correct-btn:hover { background-color: #e8f5e9; }
 
@@ -260,7 +260,6 @@
             text-align: center;
         }
 
-        /* Completion Screen */
         #completionScreen {
             display: none;
             flex-direction: column;
@@ -275,6 +274,54 @@
             margin-bottom: 20px;
         }
 
+        /* Modals for Reordering */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.6);
+            display: flex; align-items: center; justify-content: center;
+            z-index: 1000;
+        }
+        .modal-content {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 500px;
+            max-height: 80vh;
+            display: flex;
+            flex-direction: column;
+        }
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        .modal-header h3 { margin: 0; }
+        .close-modal {
+            background: none; border: none; font-size: 20px; cursor: pointer;
+        }
+        .list-container {
+            overflow-y: auto;
+            flex-grow: 1;
+            border: 1px solid #eee;
+            border-radius: 8px;
+        }
+        .list-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px;
+            border-bottom: 1px solid #eee;
+            background: #fafafa;
+        }
+        .list-item:last-child { border-bottom: none; }
+        .list-item-text {
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 60%;
+        }
+        .list-actions { display: flex; gap: 5px; }
+
         h1, h2, h3 { margin-top: 0; }
     </style>
 </head>
@@ -285,6 +332,7 @@
             <option value="">-- Select a Set --</option>
         </select>
         <button id="navNewBtn" class="btn-secondary">New Set</button>
+        <button id="navManageSetsBtn" class="btn-secondary">Manage Sets</button>
         <button id="navExportBtn" class="btn-secondary">Export All</button>
         <button id="navImportBtn" class="btn-secondary">Import</button>
         <button id="navResetBtn" class="btn-danger">Factory Reset</button>
@@ -309,8 +357,9 @@
             <div class="study-options">
                 
                 <div class="set-header">
-                    <h2 id="currentSetNameDisplay" style="margin:0;">Set Name</h2>
+                    <h2 id="currentSetNameDisplay" style="margin:0; margin-right: 5px;">Set Name</h2>
                     <button id="addCardsBtn" class="action-btn" title="Add Cards to Set">➕</button>
+                    <button id="reorderCardsBtn" class="action-btn" title="Reorder Cards">↕️</button>
                     <button id="renameSetBtn" class="action-btn" title="Rename Set">✏️</button>
                     <button id="exportSetBtn" class="action-btn" title="Export Individual Set">📤</button>
                     <button id="deleteSetBtn" class="action-btn delete" title="Delete Set">🗑️</button>
@@ -345,7 +394,7 @@
             </div>
             
             <div id="transArea">
-                <button id="showTransBtn" class="btn-secondary" style="display:none;">Show Transliteration</button>
+                <button id="showTransBtn" class="btn-secondary" style="display:none;">Show Transliteration (T)</button>
                 <div id="transText"></div>
             </div>
 
@@ -364,9 +413,24 @@
         </div>
     </div>
 
+    <div id="modalOverlay" class="modal-overlay" style="display:none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modalTitle">Manage List</h3>
+                <button class="close-modal" id="closeModalBtn">&times;</button>
+            </div>
+            <div class="list-container" id="modalListContainer">
+                </div>
+        </div>
+    </div>
+
     <script>
         // Data Structure
         let allSets = JSON.parse(localStorage.getItem('flashcardSets')) || {};
+        // New: Track order of sets
+        let setOrder = JSON.parse(localStorage.getItem('flashcardSetOrder')) || [];
+        syncSetOrder(); // Ensure order array matches object keys
+
         let currentCards = [];
         
         // State
@@ -402,16 +466,32 @@
         const completionScreen = document.getElementById('completionScreen');
         const modeRadios = document.getElementsByName('mode');
 
+        // Modal Elements
+        const modalOverlay = document.getElementById('modalOverlay');
+        const modalTitle = document.getElementById('modalTitle');
+        const modalListContainer = document.getElementById('modalListContainer');
+        const closeModalBtn = document.getElementById('closeModalBtn');
+
         // Initialization
         function init() {
             updateSetDropdown();
             openNewSetArea();
         }
 
+        // Ensures setOrder array exactly matches the keys in allSets
+        function syncSetOrder() {
+            const currentKeys = Object.keys(allSets);
+            setOrder = setOrder.filter(name => currentKeys.includes(name));
+            currentKeys.forEach(name => {
+                if (!setOrder.includes(name)) setOrder.push(name);
+            });
+        }
+
         function updateSetDropdown() {
             const previousSelection = setSelect.value;
             setSelect.innerHTML = '<option value="">-- Select a Set --</option>';
-            for (const name in allSets) {
+            // Loop using the custom order array
+            for (const name of setOrder) {
                 const opt = document.createElement('option');
                 opt.value = name;
                 opt.textContent = name;
@@ -423,7 +503,9 @@
         }
 
         function saveToStorage() {
+            syncSetOrder();
             localStorage.setItem('flashcardSets', JSON.stringify(allSets));
+            localStorage.setItem('flashcardSetOrder', JSON.stringify(setOrder));
             updateSetDropdown();
         }
 
@@ -439,24 +521,22 @@
             document.getElementById('saveBtn').textContent = "Save & Start Studying";
         }
 
-        // --- Event Listeners for Navbar ---
-        
+        // --- Navigation ---
         document.getElementById('navNewBtn').addEventListener('click', openNewSetArea);
 
         setSelect.addEventListener('change', (e) => {
             const selected = e.target.value;
-            if (selected && allSets[selected]) {
-                loadSet(selected);
-            } else {
-                openNewSetArea();
-            }
+            if (selected && allSets[selected]) loadSet(selected);
+            else openNewSetArea();
         });
 
         // Factory Reset
         document.getElementById('navResetBtn').addEventListener('click', () => {
             if (confirm("⚠️ WARNING ⚠️\n\nAre you sure you want to delete ALL flashcard sets? This action cannot be undone.")) {
                 localStorage.removeItem('flashcardSets');
+                localStorage.removeItem('flashcardSetOrder');
                 allSets = {};
+                setOrder = [];
                 saveToStorage();
                 openNewSetArea();
                 alert("All flashcards have been deleted.");
@@ -466,7 +546,8 @@
         // Mass Export / Import
         document.getElementById('navExportBtn').addEventListener('click', () => {
             if (Object.keys(allSets).length === 0) return alert("No sets to export!");
-            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(allSets));
+            const exportData = { sets: allSets, order: setOrder };
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(exportData));
             const dlAnchorElem = document.createElement('a');
             dlAnchorElem.setAttribute("href", dataStr);
             dlAnchorElem.setAttribute("download", "all_flashcards_backup.json");
@@ -479,7 +560,13 @@
             reader.onload = function(event) {
                 try {
                     const imported = JSON.parse(event.target.result);
-                    allSets = { ...allSets, ...imported }; 
+                    // Check if new format (with order) or old format
+                    if (imported.sets && imported.order) {
+                        allSets = { ...allSets, ...imported.sets };
+                        imported.order.forEach(name => { if (!setOrder.includes(name)) setOrder.push(name); });
+                    } else {
+                        allSets = { ...allSets, ...imported }; 
+                    }
                     saveToStorage();
                     alert("Flashcards imported successfully!");
                 } catch(err) {
@@ -490,16 +577,99 @@
             e.target.value = ''; 
         });
 
+        // --- Modal & Reordering Logic ---
+        
+        closeModalBtn.addEventListener('click', () => modalOverlay.style.display = 'none');
+        modalOverlay.addEventListener('click', (e) => {
+            if(e.target === modalOverlay) modalOverlay.style.display = 'none';
+        });
+
+        // 1. Manage Sets
+        document.getElementById('navManageSetsBtn').addEventListener('click', () => {
+            syncSetOrder();
+            if(setOrder.length === 0) return alert("No sets to manage yet.");
+            modalTitle.textContent = "Reorder Sets";
+            renderSetListModal();
+            modalOverlay.style.display = 'flex';
+        });
+
+        function renderSetListModal() {
+            modalListContainer.innerHTML = '';
+            setOrder.forEach((setName, index) => {
+                const item = document.createElement('div');
+                item.className = 'list-item';
+                item.innerHTML = `
+                    <div class="list-item-text"><strong>${index + 1}.</strong> ${setName}</div>
+                    <div class="list-actions">
+                        <button class="btn-secondary btn-small" onclick="moveSet(${index}, -1)" ${index === 0 ? 'disabled' : ''}>⬆️</button>
+                        <button class="btn-secondary btn-small" onclick="moveSet(${index}, 1)" ${index === setOrder.length - 1 ? 'disabled' : ''}>⬇️</button>
+                    </div>
+                `;
+                modalListContainer.appendChild(item);
+            });
+        }
+
+        window.moveSet = function(index, direction) {
+            const newPos = index + direction;
+            if (newPos < 0 || newPos >= setOrder.length) return;
+            // Swap
+            const temp = setOrder[index];
+            setOrder[index] = setOrder[newPos];
+            setOrder[newPos] = temp;
+            
+            saveToStorage();
+            renderSetListModal(); // Re-render modal
+        };
+
+        // 2. Manage Cards
+        document.getElementById('reorderCardsBtn').addEventListener('click', () => {
+            if(!currentCards || currentCards.length === 0) return;
+            modalTitle.textContent = `Reorder Cards: ${currentSetName}`;
+            renderCardListModal();
+            modalOverlay.style.display = 'flex';
+        });
+
+        function renderCardListModal() {
+            modalListContainer.innerHTML = '';
+            currentCards.forEach((card, index) => {
+                const item = document.createElement('div');
+                item.className = 'list-item';
+                item.innerHTML = `
+                    <div class="list-item-text" title="${card.front}"><strong>${index + 1}.</strong> ${card.front}</div>
+                    <div class="list-actions">
+                        <button class="btn-secondary btn-small" onclick="moveCard(${index}, -1)" ${index === 0 ? 'disabled' : ''}>⬆️</button>
+                        <button class="btn-secondary btn-small" onclick="moveCard(${index}, 1)" ${index === currentCards.length - 1 ? 'disabled' : ''}>⬇️</button>
+                    </div>
+                `;
+                modalListContainer.appendChild(item);
+            });
+        }
+
+        window.moveCard = function(index, direction) {
+            const newPos = index + direction;
+            if (newPos < 0 || newPos >= currentCards.length) return;
+            
+            // Swap in allSets
+            const temp = allSets[currentSetName][index];
+            allSets[currentSetName][index] = allSets[currentSetName][newPos];
+            allSets[currentSetName][newPos] = temp;
+            
+            currentCards = allSets[currentSetName]; // update reference
+            saveToStorage();
+            renderCardListModal(); // Re-render modal
+            setupDeck(); // Reset deck view
+        };
+
         // --- Set Actions (Export Single, Rename, Delete, Add Cards) ---
 
         document.getElementById('exportSetBtn').addEventListener('click', () => {
             if (!currentSetName || !allSets[currentSetName]) return;
-            const singleSetData = {};
-            singleSetData[currentSetName] = allSets[currentSetName];
+            const singleSetData = { sets: {}, order: [currentSetName] };
+            singleSetData.sets[currentSetName] = allSets[currentSetName];
+            
             const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(singleSetData));
             const dlAnchorElem = document.createElement('a');
             dlAnchorElem.setAttribute("href", dataStr);
-            // Replace spaces with underscores for the filename
             const cleanName = currentSetName.replace(/\s+/g, '_');
             dlAnchorElem.setAttribute("download", `${cleanName}_flashcards.json`);
             dlAnchorElem.click();
@@ -516,12 +686,16 @@
         document.getElementById('renameSetBtn').addEventListener('click', () => {
             const newName = prompt("Enter a new name for this set:", currentSetName);
             if (newName && newName.trim() !== "" && newName !== currentSetName) {
-                if(allSets[newName]) {
-                    alert("A set with this name already exists!");
-                    return;
-                }
+                if(allSets[newName]) return alert("A set with this name already exists!");
+                
+                // Update object
                 allSets[newName] = allSets[currentSetName];
                 delete allSets[currentSetName];
+                
+                // Update order array
+                const index = setOrder.indexOf(currentSetName);
+                if (index !== -1) setOrder[index] = newName.trim();
+                
                 currentSetName = newName.trim();
                 saveToStorage();
                 setSelect.value = currentSetName; 
@@ -535,7 +709,7 @@
             setupArea.style.display = 'flex';
             setupTitle.textContent = `Adding cards to: ${currentSetName}`;
             setNameInput.value = currentSetName;
-            setNameInput.disabled = true; // Lock the name input
+            setNameInput.disabled = true; 
             document.getElementById('dataInput').value = '';
             document.getElementById('saveBtn').textContent = "Add Cards to Deck";
         });
@@ -568,15 +742,12 @@
                 if (isAppendingMode) {
                     allSets[name] = allSets[name].concat(newCards);
                 } else {
-                    // Check if creating a new set that already exists
-                    if (allSets[name] && !confirm(`A set named "${name}" already exists. Do you want to add these cards to it? (Click OK to append, Cancel to overwrite)`)) {
+                    if (allSets[name] && !confirm(`A set named "${name}" already exists. Add cards to it? (Cancel to overwrite)`)) {
                         allSets[name] = newCards; // Overwrite
                     } else {
-                        // Append if it exists and they clicked OK, or create new if it doesn't exist
                         allSets[name] = allSets[name] ? allSets[name].concat(newCards) : newCards;
                     }
                 }
-
                 saveToStorage();
                 loadSet(name);
             } else {
@@ -664,7 +835,7 @@
         reverseCheck.addEventListener('change', renderCard);
 
         showTransBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
+            if(e) e.stopPropagation();
             showTransBtn.style.display = 'none';
             transText.style.display = 'block';
         });
@@ -695,10 +866,7 @@
         function handleCompletion(isCorrect) {
             if (currentMode !== 'completion') return;
 
-            if (!isCorrect) {
-                nextRoundQueue.push(activeQueue[currentIndex]);
-            }
-
+            if (!isCorrect) nextRoundQueue.push(activeQueue[currentIndex]);
             currentIndex++;
 
             if (currentIndex >= activeQueue.length) {
@@ -729,7 +897,10 @@
         document.getElementById('incorrectBtn').addEventListener('click', () => handleCompletion(false));
 
         window.addEventListener('keydown', (e) => {
-            if (flashcardArea.style.display === 'none' || completionScreen.style.display === 'flex') return;
+            // Prevent shortcuts if user is typing in an input or textarea
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+            
+            if (flashcardArea.style.display === 'none' || completionScreen.style.display === 'flex' || modalOverlay.style.display === 'flex') return;
 
             if (e.code === 'Space') {
                 e.preventDefault();
@@ -740,6 +911,11 @@
             } else if (e.code === 'ArrowLeft') {
                 if (currentMode === 'study') prevCard();
                 else handleCompletion(false);
+            } else if (e.key.toLowerCase() === 't') {
+                // Trigger 't' shortcut for transliteration
+                if(showTransBtn.style.display === 'block') {
+                    showTransBtn.click();
+                }
             }
         });
 
