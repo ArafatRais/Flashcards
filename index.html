@@ -32,6 +32,7 @@
             box-shadow: 0 2px 4px rgba(0,0,0,0.05);
             display: flex;
             justify-content: center;
+            flex-wrap: wrap;
             gap: 15px;
             box-sizing: border-box;
             align-items: center;
@@ -119,6 +120,7 @@
             display: flex;
             align-items: center;
             gap: 10px;
+            flex-wrap: wrap;
         }
 
         .action-btn {
@@ -285,6 +287,7 @@
         <button id="navNewBtn" class="btn-secondary">New Set</button>
         <button id="navExportBtn" class="btn-secondary">Export All</button>
         <button id="navImportBtn" class="btn-secondary">Import</button>
+        <button id="navResetBtn" class="btn-danger">Factory Reset</button>
         <input type="file" id="importFile" accept=".json" style="display:none">
     </nav>
 
@@ -309,6 +312,7 @@
                     <h2 id="currentSetNameDisplay" style="margin:0;">Set Name</h2>
                     <button id="addCardsBtn" class="action-btn" title="Add Cards to Set">➕</button>
                     <button id="renameSetBtn" class="action-btn" title="Rename Set">✏️</button>
+                    <button id="exportSetBtn" class="action-btn" title="Export Individual Set">📤</button>
                     <button id="deleteSetBtn" class="action-btn delete" title="Delete Set">🗑️</button>
                 </div>
                 
@@ -448,13 +452,24 @@
             }
         });
 
+        // Factory Reset
+        document.getElementById('navResetBtn').addEventListener('click', () => {
+            if (confirm("⚠️ WARNING ⚠️\n\nAre you sure you want to delete ALL flashcard sets? This action cannot be undone.")) {
+                localStorage.removeItem('flashcardSets');
+                allSets = {};
+                saveToStorage();
+                openNewSetArea();
+                alert("All flashcards have been deleted.");
+            }
+        });
+
         // Mass Export / Import
         document.getElementById('navExportBtn').addEventListener('click', () => {
             if (Object.keys(allSets).length === 0) return alert("No sets to export!");
             const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(allSets));
             const dlAnchorElem = document.createElement('a');
             dlAnchorElem.setAttribute("href", dataStr);
-            dlAnchorElem.setAttribute("download", "flashcards_backup.json");
+            dlAnchorElem.setAttribute("download", "all_flashcards_backup.json");
             dlAnchorElem.click();
         });
 
@@ -475,7 +490,20 @@
             e.target.value = ''; 
         });
 
-        // --- Set Actions (Rename, Delete, Add Cards) ---
+        // --- Set Actions (Export Single, Rename, Delete, Add Cards) ---
+
+        document.getElementById('exportSetBtn').addEventListener('click', () => {
+            if (!currentSetName || !allSets[currentSetName]) return;
+            const singleSetData = {};
+            singleSetData[currentSetName] = allSets[currentSetName];
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(singleSetData));
+            const dlAnchorElem = document.createElement('a');
+            dlAnchorElem.setAttribute("href", dataStr);
+            // Replace spaces with underscores for the filename
+            const cleanName = currentSetName.replace(/\s+/g, '_');
+            dlAnchorElem.setAttribute("download", `${cleanName}_flashcards.json`);
+            dlAnchorElem.click();
+        });
 
         document.getElementById('deleteSetBtn').addEventListener('click', () => {
             if(confirm(`Are you sure you want to permanently delete "${currentSetName}"?`)) {
