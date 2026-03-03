@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pro Flashcards</title>
+    <style>
+        :root {
+            --primary: #4255ff;
+            --bg: #f6f7fb;
+            --text: #333;
+            --card-bg: #fff;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+        }
+
+        /* Navbar */
+        nav {
+            width: 100%;
+            background: white;
+            padding: 15px 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            box-sizing: border-box;
+            align-items: center;
+        }
+
+        select, input[type="text"], button {
+            padding: 10px 15px;
+            border-radius: 8px;
+            border: 2px solid #ccc;
+            font-size: 14px;
+        }
+
+        button {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        button:hover { background-color: #3243d8; }
+        .btn-secondary { background-color: #e0e4ff; color: var(--primary); }
+        .btn-secondary:hover { background-color: #cdd4ff; }
+        .btn-danger { background-color: #ffe6e6; color: #ff4d4d; border: 1px solid #ff4d4d; }
+        .btn-danger:hover { background-color: #ffcccc; }
+
+        /* Main Container */
+        .container {
+            width: 100%;
+            max-width: 700px;
+            padding: 40px 20px;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* Setup Area */
+        #setupArea {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        textarea {
+            width: 100%;
+            height: 200px;
+            padding: 15px;
+            border-radius: 8px;
+            border: 2px solid #ccc;
+            font-size: 16px;
+            box-sizing: border-box;
+            resize: vertical;
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: bold;
+            font-size: 15px;
+        }
+
+        /* Flashcard Area */
+        #flashcardArea {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+        }
+
+        .study-options {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .set-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .action-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 18px;
+            padding: 6px;
+            border-radius: 4px;
+            color: var(--text);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .action-btn:hover { background: #e0e4ff; }
+        .action-btn.delete:hover { background: #ffe6e6; }
+
+        .mode-selector {
+            display: flex;
+            background: #e0e4ff;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .mode-selector label {
+            padding: 8px 16px;
+            cursor: pointer;
+            font-weight: bold;
+            color: var(--primary);
+            transition: background 0.2s;
+        }
+
+        .mode-selector label:has(input:checked) {
+            background: var(--primary);
+            color: white;
+        }
+
+        .mode-selector input { display: none; }
+
+        .card-container {
+            perspective: 1000px;
+            width: 100%;
+            height: 400px;
+            margin-bottom: 20px;
+            cursor: pointer;
+        }
+
+        .card {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            transition: transform 0.6s cubic-bezier(0.4, 0.2, 0.2, 1);
+            transform-style: preserve-3d;
+        }
+
+        .card.is-flipped { transform: rotateX(180deg); }
+
+        .card-face {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            text-align: center;
+            padding: 40px;
+            box-sizing: border-box;
+            background: var(--card-bg);
+            border-radius: 16px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .card-back {
+            transform: rotateX(180deg);
+            background: #fafafa;
+            color: var(--primary);
+        }
+
+        /* Transliteration Area */
+        #transArea {
+            min-height: 40px;
+            margin-bottom: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        #transText {
+            display: none;
+            font-size: 18px;
+            color: #555;
+            background: #e8e8e8;
+            padding: 8px 16px;
+            border-radius: 8px;
+            margin-top: 10px;
+        }
+
+        /* Controls */
+        .controls {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .icon-btn {
+            background-color: white;
+            color: var(--text);
+            border: 2px solid #ddd;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            padding: 0;
+            cursor: pointer;
+        }
+
+        .icon-btn:hover { background-color: #f0f0f0; }
+
+        /* Completion Mode Buttons */
+        .incorrect-btn { border-color: #ff4d4d; color: #ff4d4d; }
+        .incorrect-btn:hover { background-color: #ffe6e6; }
+        
+        .correct-btn { border-color: #4caf50; color: #4caf50; }
+        .correct-btn:hover { background-color: #e8f5e9; }
+
+        .counter {
+            font-size: 18px;
+            font-weight: bold;
+            min-width: 100px;
+            text-align: center;
+        }
+
+        /* Completion Screen */
+        #completionScreen {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 400px;
+            text-align: center;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            width: 100%;
+            margin-bottom: 20px;
+        }
+
+        h1, h2, h3 { margin-top: 0; }
+    </style>
+</head>
+<body>
+
+    <nav>
+        <select id="setSelect">
+            <option value="">-- Select a Set --</option>
+        </select>
+        <button id="navNewBtn" class="btn-secondary">New Set</button>
+        <button id="navExportBtn" class="btn-secondary">Export All</button>
+        <button id="navImportBtn" class="btn-secondary">Import</button>
+        <input type="file" id="importFile" accept=".json" style="display:none">
+    </nav>
+
+    <div class="container">
+        <div id="setupArea">
+            <h2 id="setupTitle">Create New Set</h2>
+            <input type="text" id="setName" placeholder="Name your flashcard set...">
+            
+            <div class="checkbox-group">
+                <input type="checkbox" id="threeColCheck">
+                <label for="threeColCheck">Enable 3-Column Mode (Front | Transliteration | Back)</label>
+            </div>
+
+            <textarea id="dataInput" placeholder="Paste table here...&#10;If 2-column: Front | Back&#10;If 3-column: Front | Transliteration | Back"></textarea>
+            <button id="saveBtn">Save & Start Studying</button>
+        </div>
+
+        <div id="flashcardArea">
+            <div class="study-options">
+                
+                <div class="set-header">
+                    <h2 id="currentSetNameDisplay" style="margin:0;">Set Name</h2>
+                    <button id="addCardsBtn" class="action-btn" title="Add Cards to Set">➕</button>
+                    <button id="renameSetBtn" class="action-btn" title="Rename Set">✏️</button>
+                    <button id="deleteSetBtn" class="action-btn delete" title="Delete Set">🗑️</button>
+                </div>
+                
+                <div class="mode-selector">
+                    <label>
+                        <input type="radio" name="mode" value="study" checked> Study
+                    </label>
+                    <label>
+                        <input type="radio" name="mode" value="completion"> Completion
+                    </label>
+                </div>
+
+                <div class="checkbox-group">
+                    <input type="checkbox" id="reverseCheck">
+                    <label for="reverseCheck">Reverse</label>
+                </div>
+            </div>
+
+            <div class="card-container" id="cardContainer">
+                <div class="card" id="card">
+                    <div class="card-face card-front" id="cardFront"></div>
+                    <div class="card-face card-back" id="cardBack"></div>
+                </div>
+            </div>
+
+            <div id="completionScreen">
+                <h2>🎉 Set Mastered!</h2>
+                <p>You got every card correct.</p>
+                <button id="restartCompletionBtn">Restart Completion Mode</button>
+            </div>
+            
+            <div id="transArea">
+                <button id="showTransBtn" class="btn-secondary" style="display:none;">Show Transliteration</button>
+                <div id="transText"></div>
+            </div>
+
+            <div class="controls" id="studyControls">
+                <button class="icon-btn" id="prevBtn" title="Previous">&larr;</button>
+                <span class="counter" id="studyCounter">1 / 1</span>
+                <button class="icon-btn" id="nextBtn" title="Next">&rarr;</button>
+            </div>
+
+            <div class="controls" id="completionControls" style="display:none;">
+                <button class="icon-btn incorrect-btn" id="incorrectBtn" title="Incorrect (Left Arrow)">❌</button>
+                <span class="counter" id="completionCounter">Remaining: 0</span>
+                <button class="icon-btn correct-btn" id="correctBtn" title="Correct (Right Arrow)">✅</button>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        // Data Structure
+        let allSets = JSON.parse(localStorage.getItem('flashcardSets')) || {};
+        let currentCards = [];
+        
+        // State
+        let activeQueue = [];
+        let nextRoundQueue = [];
+        let currentIndex = 0;
+        let isFlipped = false;
+        let currentMode = 'study';
+        let currentSetName = "";
+        let isAppendingMode = false;
+
+        // DOM Elements
+        const setupArea = document.getElementById('setupArea');
+        const setupTitle = document.getElementById('setupTitle');
+        const flashcardArea = document.getElementById('flashcardArea');
+        const setSelect = document.getElementById('setSelect');
+        const setNameInput = document.getElementById('setName');
+        const cardFront = document.getElementById('cardFront');
+        const cardBack = document.getElementById('cardBack');
+        const cardElement = document.getElementById('card');
+        const cardContainer = document.getElementById('cardContainer');
+        const currentSetNameDisplay = document.getElementById('currentSetNameDisplay');
+        const reverseCheck = document.getElementById('reverseCheck');
+        
+        const showTransBtn = document.getElementById('showTransBtn');
+        const transText = document.getElementById('transText');
+
+        const studyControls = document.getElementById('studyControls');
+        const completionControls = document.getElementById('completionControls');
+        const studyCounter = document.getElementById('studyCounter');
+        const completionCounter = document.getElementById('completionCounter');
+        
+        const completionScreen = document.getElementById('completionScreen');
+        const modeRadios = document.getElementsByName('mode');
+
+        // Initialization
+        function init() {
+            updateSetDropdown();
+            openNewSetArea();
+        }
+
+        function updateSetDropdown() {
+            const previousSelection = setSelect.value;
+            setSelect.innerHTML = '<option value="">-- Select a Set --</option>';
+            for (const name in allSets) {
+                const opt = document.createElement('option');
+                opt.value = name;
+                opt.textContent = name;
+                setSelect.appendChild(opt);
+            }
+            if (allSets[previousSelection]) {
+                setSelect.value = previousSelection;
+            }
+        }
+
+        function saveToStorage() {
+            localStorage.setItem('flashcardSets', JSON.stringify(allSets));
+            updateSetDropdown();
+        }
+
+        function openNewSetArea() {
+            isAppendingMode = false;
+            setSelect.value = "";
+            flashcardArea.style.display = 'none';
+            setupArea.style.display = 'flex';
+            setupTitle.textContent = "Create New Set";
+            setNameInput.value = '';
+            setNameInput.disabled = false;
+            document.getElementById('dataInput').value = '';
+            document.getElementById('saveBtn').textContent = "Save & Start Studying";
+        }
+
+        // --- Event Listeners for Navbar ---
+        
+        document.getElementById('navNewBtn').addEventListener('click', openNewSetArea);
+
+        setSelect.addEventListener('change', (e) => {
+            const selected = e.target.value;
+            if (selected && allSets[selected]) {
+                loadSet(selected);
+            } else {
+                openNewSetArea();
+            }
+        });
+
+        // Mass Export / Import
+        document.getElementById('navExportBtn').addEventListener('click', () => {
+            if (Object.keys(allSets).length === 0) return alert("No sets to export!");
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(allSets));
+            const dlAnchorElem = document.createElement('a');
+            dlAnchorElem.setAttribute("href", dataStr);
+            dlAnchorElem.setAttribute("download", "flashcards_backup.json");
+            dlAnchorElem.click();
+        });
+
+        document.getElementById('navImportBtn').addEventListener('click', () => document.getElementById('importFile').click());
+        document.getElementById('importFile').addEventListener('change', function(e) {
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                try {
+                    const imported = JSON.parse(event.target.result);
+                    allSets = { ...allSets, ...imported }; 
+                    saveToStorage();
+                    alert("Flashcards imported successfully!");
+                } catch(err) {
+                    alert("Error: Invalid JSON file.");
+                }
+            };
+            if(e.target.files[0]) reader.readAsText(e.target.files[0]);
+            e.target.value = ''; 
+        });
+
+        // --- Set Actions (Rename, Delete, Add Cards) ---
+
+        document.getElementById('deleteSetBtn').addEventListener('click', () => {
+            if(confirm(`Are you sure you want to permanently delete "${currentSetName}"?`)) {
+                delete allSets[currentSetName];
+                saveToStorage();
+                openNewSetArea();
+            }
+        });
+
+        document.getElementById('renameSetBtn').addEventListener('click', () => {
+            const newName = prompt("Enter a new name for this set:", currentSetName);
+            if (newName && newName.trim() !== "" && newName !== currentSetName) {
+                if(allSets[newName]) {
+                    alert("A set with this name already exists!");
+                    return;
+                }
+                allSets[newName] = allSets[currentSetName];
+                delete allSets[currentSetName];
+                currentSetName = newName.trim();
+                saveToStorage();
+                setSelect.value = currentSetName; 
+                currentSetNameDisplay.textContent = currentSetName;
+            }
+        });
+
+        document.getElementById('addCardsBtn').addEventListener('click', () => {
+            isAppendingMode = true;
+            flashcardArea.style.display = 'none';
+            setupArea.style.display = 'flex';
+            setupTitle.textContent = `Adding cards to: ${currentSetName}`;
+            setNameInput.value = currentSetName;
+            setNameInput.disabled = true; // Lock the name input
+            document.getElementById('dataInput').value = '';
+            document.getElementById('saveBtn').textContent = "Add Cards to Deck";
+        });
+
+        // --- Set Creation & Appending Logic ---
+
+        document.getElementById('saveBtn').addEventListener('click', () => {
+            const name = setNameInput.value.trim();
+            const rawData = document.getElementById('dataInput').value.trim();
+            const isThreeCol = document.getElementById('threeColCheck').checked;
+
+            if (!name) return alert("Please provide a name for this set.");
+            if (!rawData) return alert("Please paste some data.");
+
+            const lines = rawData.split('\n');
+            const newCards = [];
+
+            lines.forEach(line => {
+                let parts = line.split('\t');
+                if (parts.length < 2) parts = line.split(',');
+
+                if (isThreeCol && parts.length >= 3) {
+                    newCards.push({ front: parts[0].trim(), trans: parts[1].trim(), back: parts.slice(2).join(' ').trim() });
+                } else if (!isThreeCol && parts.length >= 2) {
+                    newCards.push({ front: parts[0].trim(), trans: "", back: parts.slice(1).join(' ').trim() });
+                }
+            });
+
+            if (newCards.length > 0) {
+                if (isAppendingMode) {
+                    allSets[name] = allSets[name].concat(newCards);
+                } else {
+                    // Check if creating a new set that already exists
+                    if (allSets[name] && !confirm(`A set named "${name}" already exists. Do you want to add these cards to it? (Click OK to append, Cancel to overwrite)`)) {
+                        allSets[name] = newCards; // Overwrite
+                    } else {
+                        // Append if it exists and they clicked OK, or create new if it doesn't exist
+                        allSets[name] = allSets[name] ? allSets[name].concat(newCards) : newCards;
+                    }
+                }
+
+                saveToStorage();
+                loadSet(name);
+            } else {
+                alert("Could not parse data. Check your columns/checkbox settings.");
+            }
+        });
+
+        // --- Loading and Deck Setup ---
+
+        function loadSet(name) {
+            currentSetName = name;
+            currentCards = allSets[name];
+            currentSetNameDisplay.textContent = name;
+            setSelect.value = name;
+            
+            modeRadios[0].checked = true;
+            currentMode = 'study';
+            setupDeck();
+            
+            setupArea.style.display = 'none';
+            flashcardArea.style.display = 'flex';
+            reverseCheck.checked = false;
+        }
+
+        modeRadios.forEach(radio => {
+            radio.addEventListener('change', (e) => {
+                currentMode = e.target.value;
+                setupDeck();
+            });
+        });
+
+        document.getElementById('restartCompletionBtn').addEventListener('click', setupDeck);
+
+        function setupDeck() {
+            completionScreen.style.display = 'none';
+            cardContainer.style.display = 'block';
+            currentIndex = 0;
+
+            if (currentMode === 'study') {
+                activeQueue = [...currentCards];
+                studyControls.style.display = 'flex';
+                completionControls.style.display = 'none';
+            } else {
+                activeQueue = [...currentCards];
+                nextRoundQueue = [];
+                studyControls.style.display = 'none';
+                completionControls.style.display = 'flex';
+            }
+            renderCard();
+        }
+
+        // --- Rendering Logic ---
+
+        function renderCard() {
+            if (activeQueue.length === 0) return;
+
+            const card = activeQueue[currentIndex];
+            const isReversed = reverseCheck.checked;
+
+            cardElement.style.transition = 'none';
+            cardElement.classList.remove('is-flipped');
+            isFlipped = false;
+            void cardElement.offsetWidth; 
+            cardElement.style.transition = 'transform 0.6s cubic-bezier(0.4, 0.2, 0.2, 1)';
+
+            cardFront.textContent = isReversed ? card.back : card.front;
+            cardBack.textContent = isReversed ? card.front : card.back;
+            
+            if (currentMode === 'study') {
+                studyCounter.textContent = `${currentIndex + 1} / ${activeQueue.length}`;
+            } else {
+                const remaining = activeQueue.length - currentIndex;
+                completionCounter.textContent = `Remaining: ${remaining}`;
+            }
+
+            transText.style.display = 'none';
+            if (card.trans) {
+                showTransBtn.style.display = 'block';
+                transText.textContent = card.trans;
+            } else {
+                showTransBtn.style.display = 'none';
+            }
+        }
+
+        reverseCheck.addEventListener('change', renderCard);
+
+        showTransBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            showTransBtn.style.display = 'none';
+            transText.style.display = 'block';
+        });
+
+        function toggleFlip() {
+            isFlipped = !isFlipped;
+            cardElement.classList.toggle('is-flipped');
+        }
+
+        // --- Actions: Study Mode ---
+        function nextCard() {
+            if (currentMode !== 'study') return;
+            if (currentIndex < activeQueue.length - 1) {
+                currentIndex++;
+                renderCard();
+            }
+        }
+
+        function prevCard() {
+            if (currentMode !== 'study') return;
+            if (currentIndex > 0) {
+                currentIndex--;
+                renderCard();
+            }
+        }
+
+        // --- Actions: Completion Mode ---
+        function handleCompletion(isCorrect) {
+            if (currentMode !== 'completion') return;
+
+            if (!isCorrect) {
+                nextRoundQueue.push(activeQueue[currentIndex]);
+            }
+
+            currentIndex++;
+
+            if (currentIndex >= activeQueue.length) {
+                if (nextRoundQueue.length === 0) {
+                    cardContainer.style.display = 'none';
+                    completionControls.style.display = 'none';
+                    showTransBtn.style.display = 'none';
+                    transText.style.display = 'none';
+                    completionScreen.style.display = 'flex';
+                } else {
+                    activeQueue = [...nextRoundQueue];
+                    nextRoundQueue = [];
+                    currentIndex = 0;
+                    renderCard();
+                }
+            } else {
+                renderCard();
+            }
+        }
+
+        // --- Event Binding ---
+        cardContainer.addEventListener('click', toggleFlip);
+        
+        document.getElementById('nextBtn').addEventListener('click', nextCard);
+        document.getElementById('prevBtn').addEventListener('click', prevCard);
+
+        document.getElementById('correctBtn').addEventListener('click', () => handleCompletion(true));
+        document.getElementById('incorrectBtn').addEventListener('click', () => handleCompletion(false));
+
+        window.addEventListener('keydown', (e) => {
+            if (flashcardArea.style.display === 'none' || completionScreen.style.display === 'flex') return;
+
+            if (e.code === 'Space') {
+                e.preventDefault();
+                toggleFlip();
+            } else if (e.code === 'ArrowRight') {
+                if (currentMode === 'study') nextCard();
+                else handleCompletion(true);
+            } else if (e.code === 'ArrowLeft') {
+                if (currentMode === 'study') prevCard();
+                else handleCompletion(false);
+            }
+        });
+
+        init();
+    </script>
+</body>
+</html>
