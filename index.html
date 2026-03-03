@@ -5,11 +5,52 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pro Flashcards</title>
     <style>
+        /* Light Mode Variables (Default) */
         :root {
             --primary: #4255ff;
             --bg: #f6f7fb;
             --text: #333;
             --card-bg: #fff;
+            --card-back-bg: #fafafa;
+            --border: #ccc;
+            --nav-shadow: rgba(0,0,0,0.05);
+            --sec-bg: #e0e4ff;
+            --sec-hover: #cdd4ff;
+            --danger-bg: #ffe6e6;
+            --danger-text: #ff4d4d;
+            --danger-hover: #ffcccc;
+            --success-text: #4caf50;
+            --success-bg: #e8f5e9;
+            --modal-overlay: rgba(0,0,0,0.6);
+            --list-item-bg: #fafafa;
+            --list-item-border: #eee;
+            --hint-bg: #e8e8e8;
+            --icon-bg: #fff;
+            --icon-hover: #f0f0f0;
+        }
+
+        /* Dark Mode Variables */
+        body.dark-mode {
+            --primary: #7586ff; /* Lighter blue for better contrast */
+            --bg: #121212;
+            --text: #e0e0e0;
+            --card-bg: #1e1e1e;
+            --card-back-bg: #2a2a2a;
+            --border: #444;
+            --nav-shadow: rgba(0,0,0,0.5);
+            --sec-bg: #2c315e; 
+            --sec-hover: #3a417a;
+            --danger-bg: #3b1c1c;
+            --danger-text: #ff6b6b;
+            --danger-hover: #4a2323;
+            --success-text: #81c784;
+            --success-bg: #1b331c;
+            --modal-overlay: rgba(0,0,0,0.8);
+            --list-item-bg: #2a2a2a;
+            --list-item-border: #444;
+            --hint-bg: #2a2a2a;
+            --icon-bg: #1e1e1e;
+            --icon-hover: #333;
         }
 
         body {
@@ -22,44 +63,58 @@
             margin: 0;
             padding: 0;
             height: 100vh;
+            transition: background-color 0.3s, color 0.3s;
         }
 
         /* Navbar */
         nav {
             width: 100%;
-            background: white;
+            background: var(--card-bg);
             padding: 15px 20px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            box-shadow: 0 2px 4px var(--nav-shadow);
             display: flex;
             justify-content: center;
             flex-wrap: wrap;
             gap: 15px;
             box-sizing: border-box;
             align-items: center;
+            transition: background-color 0.3s;
         }
 
-        select, input[type="text"], button {
+        select, input[type="text"], textarea {
             padding: 10px 15px;
             border-radius: 8px;
-            border: 2px solid #ccc;
+            border: 2px solid var(--border);
             font-size: 14px;
+            background-color: var(--card-bg);
+            color: var(--text);
+            transition: background-color 0.3s, color 0.3s, border-color 0.3s;
         }
 
         button {
+            padding: 10px 15px;
+            border-radius: 8px;
+            font-size: 14px;
             background-color: var(--primary);
             color: white;
             border: none;
             font-weight: bold;
             cursor: pointer;
-            transition: background 0.2s;
+            transition: background 0.2s, color 0.2s;
         }
 
-        button:hover { background-color: #3243d8; }
-        .btn-secondary { background-color: #e0e4ff; color: var(--primary); }
-        .btn-secondary:hover { background-color: #cdd4ff; }
-        .btn-danger { background-color: #ffe6e6; color: #ff4d4d; border: 1px solid #ff4d4d; }
-        .btn-danger:hover { background-color: #ffcccc; }
+        button:hover { filter: brightness(0.9); }
+        .btn-secondary { background-color: var(--sec-bg); color: var(--primary); }
+        .btn-secondary:hover { background-color: var(--sec-hover); }
+        .btn-danger { background-color: var(--danger-bg); color: var(--danger-text); border: 1px solid var(--danger-text); }
+        .btn-danger:hover { background-color: var(--danger-hover); }
         .btn-small { padding: 6px 10px; font-size: 12px; }
+
+        #themeToggleBtn {
+            font-size: 18px;
+            padding: 8px 12px;
+            border-radius: 50%;
+        }
 
         /* Main Container */
         .container {
@@ -83,11 +138,6 @@
         textarea {
             width: 100%;
             height: 200px;
-            padding: 15px;
-            border-radius: 8px;
-            border: 2px solid #ccc;
-            font-size: 16px;
-            box-sizing: border-box;
             resize: vertical;
         }
 
@@ -97,6 +147,12 @@
             gap: 8px;
             font-weight: bold;
             font-size: 15px;
+        }
+
+        .checkbox-container {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
         }
 
         /* Flashcard Area */
@@ -114,7 +170,7 @@
             align-items: center;
             margin-bottom: 20px;
             flex-wrap: wrap;
-            gap: 10px;
+            gap: 15px;
         }
 
         .set-header {
@@ -137,12 +193,12 @@
             justify-content: center;
         }
 
-        .action-btn:hover { background: #e0e4ff; }
-        .action-btn.delete:hover { background: #ffe6e6; }
+        .action-btn:hover { background: var(--sec-bg); }
+        .action-btn.delete:hover { background: var(--danger-bg); }
 
         .mode-selector {
             display: flex;
-            background: #e0e4ff;
+            background: var(--sec-bg);
             border-radius: 8px;
             overflow: hidden;
         }
@@ -152,7 +208,7 @@
             cursor: pointer;
             font-weight: bold;
             color: var(--primary);
-            transition: background 0.2s;
+            transition: background 0.2s, color 0.2s;
         }
 
         .mode-selector label:has(input:checked) {
@@ -197,11 +253,12 @@
             border-radius: 16px;
             box-shadow: 0 4px 12px rgba(0,0,0,0.1);
             overflow-y: auto;
+            transition: background-color 0.3s;
         }
 
         .card-back {
             transform: rotateX(180deg);
-            background: #fafafa;
+            background: var(--card-back-bg);
             color: var(--primary);
         }
 
@@ -217,11 +274,12 @@
         #transText {
             display: none;
             font-size: 18px;
-            color: #555;
-            background: #e8e8e8;
+            color: var(--text);
+            background: var(--hint-bg);
             padding: 8px 16px;
             border-radius: 8px;
             margin-top: 10px;
+            transition: background-color 0.3s, color 0.3s;
         }
 
         /* Controls */
@@ -232,9 +290,9 @@
         }
 
         .icon-btn {
-            background-color: white;
+            background-color: var(--icon-bg);
             color: var(--text);
-            border: 2px solid #ddd;
+            border: 2px solid var(--border);
             width: 50px;
             height: 50px;
             border-radius: 50%;
@@ -244,14 +302,15 @@
             font-size: 24px;
             padding: 0;
             cursor: pointer;
+            transition: background-color 0.2s, border-color 0.3s;
         }
 
-        .icon-btn:hover { background-color: #f0f0f0; }
+        .icon-btn:hover { background-color: var(--icon-hover); }
 
-        .incorrect-btn { border-color: #ff4d4d; color: #ff4d4d; }
-        .incorrect-btn:hover { background-color: #ffe6e6; }
-        .correct-btn { border-color: #4caf50; color: #4caf50; }
-        .correct-btn:hover { background-color: #e8f5e9; }
+        .incorrect-btn { border-color: var(--danger-text); color: var(--danger-text); }
+        .incorrect-btn:hover { background-color: var(--danger-bg); }
+        .correct-btn { border-color: var(--success-text); color: var(--success-text); }
+        .correct-btn:hover { background-color: var(--success-bg); }
 
         .counter {
             font-size: 18px;
@@ -267,23 +326,24 @@
             justify-content: center;
             height: 400px;
             text-align: center;
-            background: white;
+            background: var(--card-bg);
             border-radius: 16px;
             box-shadow: 0 4px 12px rgba(0,0,0,0.1);
             width: 100%;
             margin-bottom: 20px;
+            transition: background-color 0.3s;
         }
 
         /* Modals for Reordering */
         .modal-overlay {
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.6);
+            background: var(--modal-overlay);
             display: flex; align-items: center; justify-content: center;
             z-index: 1000;
         }
         .modal-content {
-            background: white;
+            background: var(--card-bg);
             padding: 25px;
             border-radius: 12px;
             width: 90%;
@@ -291,6 +351,7 @@
             max-height: 80vh;
             display: flex;
             flex-direction: column;
+            transition: background-color 0.3s;
         }
         .modal-header {
             display: flex;
@@ -300,12 +361,12 @@
         }
         .modal-header h3 { margin: 0; }
         .close-modal {
-            background: none; border: none; font-size: 20px; cursor: pointer;
+            background: none; border: none; font-size: 20px; cursor: pointer; color: var(--text);
         }
         .list-container {
             overflow-y: auto;
             flex-grow: 1;
-            border: 1px solid #eee;
+            border: 1px solid var(--border);
             border-radius: 8px;
         }
         .list-item {
@@ -313,8 +374,9 @@
             justify-content: space-between;
             align-items: center;
             padding: 12px;
-            border-bottom: 1px solid #eee;
-            background: #fafafa;
+            border-bottom: 1px solid var(--list-item-border);
+            background: var(--list-item-bg);
+            transition: background-color 0.3s;
         }
         .list-item:last-child { border-bottom: none; }
         .list-item-text {
@@ -336,6 +398,7 @@
         <button id="navExportBtn" class="btn-secondary">Export All</button>
         <button id="navImportBtn" class="btn-secondary">Import</button>
         <button id="navResetBtn" class="btn-danger">Factory Reset</button>
+        <button id="themeToggleBtn" class="btn-secondary" title="Toggle Dark Mode">🌙</button>
         <input type="file" id="importFile" accept=".json" style="display:none">
     </nav>
 
@@ -374,9 +437,15 @@
                     </label>
                 </div>
 
-                <div class="checkbox-group">
-                    <input type="checkbox" id="reverseCheck">
-                    <label for="reverseCheck">Reverse</label>
+                <div class="checkbox-container">
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="shuffleCheck">
+                        <label for="shuffleCheck">Shuffle</label>
+                    </div>
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="reverseCheck">
+                        <label for="reverseCheck">Reverse</label>
+                    </div>
                 </div>
             </div>
 
@@ -425,11 +494,12 @@
     </div>
 
     <script>
-        // Data Structure
+        // Data Structure & Theme
         let allSets = JSON.parse(localStorage.getItem('flashcardSets')) || {};
-        // New: Track order of sets
         let setOrder = JSON.parse(localStorage.getItem('flashcardSetOrder')) || [];
-        syncSetOrder(); // Ensure order array matches object keys
+        let isDarkMode = JSON.parse(localStorage.getItem('flashcardDarkMode')) || false;
+        
+        syncSetOrder(); 
 
         let currentCards = [];
         
@@ -443,6 +513,7 @@
         let isAppendingMode = false;
 
         // DOM Elements
+        const themeToggleBtn = document.getElementById('themeToggleBtn');
         const setupArea = document.getElementById('setupArea');
         const setupTitle = document.getElementById('setupTitle');
         const flashcardArea = document.getElementById('flashcardArea');
@@ -454,6 +525,7 @@
         const cardContainer = document.getElementById('cardContainer');
         const currentSetNameDisplay = document.getElementById('currentSetNameDisplay');
         const reverseCheck = document.getElementById('reverseCheck');
+        const shuffleCheck = document.getElementById('shuffleCheck');
         
         const showTransBtn = document.getElementById('showTransBtn');
         const transText = document.getElementById('transText');
@@ -474,11 +546,24 @@
 
         // Initialization
         function init() {
+            // Apply Theme
+            if (isDarkMode) {
+                document.body.classList.add('dark-mode');
+                themeToggleBtn.textContent = '☀️';
+            }
+            
             updateSetDropdown();
             openNewSetArea();
         }
 
-        // Ensures setOrder array exactly matches the keys in allSets
+        // Theme Toggle
+        themeToggleBtn.addEventListener('click', () => {
+            isDarkMode = !isDarkMode;
+            document.body.classList.toggle('dark-mode', isDarkMode);
+            themeToggleBtn.textContent = isDarkMode ? '☀️' : '🌙';
+            localStorage.setItem('flashcardDarkMode', JSON.stringify(isDarkMode));
+        });
+
         function syncSetOrder() {
             const currentKeys = Object.keys(allSets);
             setOrder = setOrder.filter(name => currentKeys.includes(name));
@@ -490,7 +575,6 @@
         function updateSetDropdown() {
             const previousSelection = setSelect.value;
             setSelect.innerHTML = '<option value="">-- Select a Set --</option>';
-            // Loop using the custom order array
             for (const name of setOrder) {
                 const opt = document.createElement('option');
                 opt.value = name;
@@ -530,7 +614,6 @@
             else openNewSetArea();
         });
 
-        // Factory Reset
         document.getElementById('navResetBtn').addEventListener('click', () => {
             if (confirm("⚠️ WARNING ⚠️\n\nAre you sure you want to delete ALL flashcard sets? This action cannot be undone.")) {
                 localStorage.removeItem('flashcardSets');
@@ -543,7 +626,6 @@
             }
         });
 
-        // Mass Export / Import
         document.getElementById('navExportBtn').addEventListener('click', () => {
             if (Object.keys(allSets).length === 0) return alert("No sets to export!");
             const exportData = { sets: allSets, order: setOrder };
@@ -560,7 +642,6 @@
             reader.onload = function(event) {
                 try {
                     const imported = JSON.parse(event.target.result);
-                    // Check if new format (with order) or old format
                     if (imported.sets && imported.order) {
                         allSets = { ...allSets, ...imported.sets };
                         imported.order.forEach(name => { if (!setOrder.includes(name)) setOrder.push(name); });
@@ -578,13 +659,11 @@
         });
 
         // --- Modal & Reordering Logic ---
-        
         closeModalBtn.addEventListener('click', () => modalOverlay.style.display = 'none');
         modalOverlay.addEventListener('click', (e) => {
             if(e.target === modalOverlay) modalOverlay.style.display = 'none';
         });
 
-        // 1. Manage Sets
         document.getElementById('navManageSetsBtn').addEventListener('click', () => {
             syncSetOrder();
             if(setOrder.length === 0) return alert("No sets to manage yet.");
@@ -612,16 +691,13 @@
         window.moveSet = function(index, direction) {
             const newPos = index + direction;
             if (newPos < 0 || newPos >= setOrder.length) return;
-            // Swap
             const temp = setOrder[index];
             setOrder[index] = setOrder[newPos];
             setOrder[newPos] = temp;
-            
             saveToStorage();
-            renderSetListModal(); // Re-render modal
+            renderSetListModal(); 
         };
 
-        // 2. Manage Cards
         document.getElementById('reorderCardsBtn').addEventListener('click', () => {
             if(!currentCards || currentCards.length === 0) return;
             modalTitle.textContent = `Reorder Cards: ${currentSetName}`;
@@ -648,25 +724,20 @@
         window.moveCard = function(index, direction) {
             const newPos = index + direction;
             if (newPos < 0 || newPos >= currentCards.length) return;
-            
-            // Swap in allSets
             const temp = allSets[currentSetName][index];
             allSets[currentSetName][index] = allSets[currentSetName][newPos];
             allSets[currentSetName][newPos] = temp;
-            
-            currentCards = allSets[currentSetName]; // update reference
+            currentCards = allSets[currentSetName]; 
             saveToStorage();
-            renderCardListModal(); // Re-render modal
-            setupDeck(); // Reset deck view
+            renderCardListModal(); 
+            setupDeck(); 
         };
 
         // --- Set Actions (Export Single, Rename, Delete, Add Cards) ---
-
         document.getElementById('exportSetBtn').addEventListener('click', () => {
             if (!currentSetName || !allSets[currentSetName]) return;
             const singleSetData = { sets: {}, order: [currentSetName] };
             singleSetData.sets[currentSetName] = allSets[currentSetName];
-            
             const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(singleSetData));
             const dlAnchorElem = document.createElement('a');
             dlAnchorElem.setAttribute("href", dataStr);
@@ -685,18 +756,20 @@
 
         document.getElementById('renameSetBtn').addEventListener('click', () => {
             const newName = prompt("Enter a new name for this set:", currentSetName);
-            if (newName && newName.trim() !== "" && newName !== currentSetName) {
-                if(allSets[newName]) return alert("A set with this name already exists!");
+            if (newName && newName.trim() !== "" && newName.trim() !== currentSetName) {
+                const trimmedName = newName.trim();
+                if(allSets[trimmedName]) return alert("A set with this name already exists!");
                 
-                // Update object
-                allSets[newName] = allSets[currentSetName];
+                // Keep order in place before modifying allSets
+                const index = setOrder.indexOf(currentSetName);
+                if (index !== -1) {
+                    setOrder[index] = trimmedName; 
+                }
+                
+                allSets[trimmedName] = allSets[currentSetName];
                 delete allSets[currentSetName];
                 
-                // Update order array
-                const index = setOrder.indexOf(currentSetName);
-                if (index !== -1) setOrder[index] = newName.trim();
-                
-                currentSetName = newName.trim();
+                currentSetName = trimmedName;
                 saveToStorage();
                 setSelect.value = currentSetName; 
                 currentSetNameDisplay.textContent = currentSetName;
@@ -715,7 +788,6 @@
         });
 
         // --- Set Creation & Appending Logic ---
-
         document.getElementById('saveBtn').addEventListener('click', () => {
             const name = setNameInput.value.trim();
             const rawData = document.getElementById('dataInput').value.trim();
@@ -743,7 +815,7 @@
                     allSets[name] = allSets[name].concat(newCards);
                 } else {
                     if (allSets[name] && !confirm(`A set named "${name}" already exists. Add cards to it? (Cancel to overwrite)`)) {
-                        allSets[name] = newCards; // Overwrite
+                        allSets[name] = newCards; 
                     } else {
                         allSets[name] = allSets[name] ? allSets[name].concat(newCards) : newCards;
                     }
@@ -755,8 +827,7 @@
             }
         });
 
-        // --- Loading and Deck Setup ---
-
+        // --- Loading, Shuffle, and Deck Setup ---
         function loadSet(name) {
             currentSetName = name;
             currentCards = allSets[name];
@@ -765,6 +836,7 @@
             
             modeRadios[0].checked = true;
             currentMode = 'study';
+            shuffleCheck.checked = false; 
             setupDeck();
             
             setupArea.style.display = 'none';
@@ -779,6 +851,7 @@
             });
         });
 
+        shuffleCheck.addEventListener('change', setupDeck);
         document.getElementById('restartCompletionBtn').addEventListener('click', setupDeck);
 
         function setupDeck() {
@@ -786,12 +859,21 @@
             cardContainer.style.display = 'block';
             currentIndex = 0;
 
+            let baseDeck = [...currentCards];
+
+            if (shuffleCheck.checked) {
+                for (let i = baseDeck.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [baseDeck[i], baseDeck[j]] = [baseDeck[j], baseDeck[i]];
+                }
+            }
+
             if (currentMode === 'study') {
-                activeQueue = [...currentCards];
+                activeQueue = baseDeck;
                 studyControls.style.display = 'flex';
                 completionControls.style.display = 'none';
             } else {
-                activeQueue = [...currentCards];
+                activeQueue = baseDeck;
                 nextRoundQueue = [];
                 studyControls.style.display = 'none';
                 completionControls.style.display = 'flex';
@@ -800,7 +882,6 @@
         }
 
         // --- Rendering Logic ---
-
         function renderCard() {
             if (activeQueue.length === 0) return;
 
@@ -889,17 +970,13 @@
 
         // --- Event Binding ---
         cardContainer.addEventListener('click', toggleFlip);
-        
         document.getElementById('nextBtn').addEventListener('click', nextCard);
         document.getElementById('prevBtn').addEventListener('click', prevCard);
-
         document.getElementById('correctBtn').addEventListener('click', () => handleCompletion(true));
         document.getElementById('incorrectBtn').addEventListener('click', () => handleCompletion(false));
 
         window.addEventListener('keydown', (e) => {
-            // Prevent shortcuts if user is typing in an input or textarea
             if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
-            
             if (flashcardArea.style.display === 'none' || completionScreen.style.display === 'flex' || modalOverlay.style.display === 'flex') return;
 
             if (e.code === 'Space') {
@@ -912,10 +989,7 @@
                 if (currentMode === 'study') prevCard();
                 else handleCompletion(false);
             } else if (e.key.toLowerCase() === 't') {
-                // Trigger 't' shortcut for transliteration
-                if(showTransBtn.style.display === 'block') {
-                    showTransBtn.click();
-                }
+                if(showTransBtn.style.display === 'block') showTransBtn.click();
             }
         });
 
